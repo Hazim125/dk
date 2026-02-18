@@ -2,9 +2,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { db } from "./db"; // استيراد اتصال قاعدة البيانات
-import { users } from "@shared/schema"; // استيراد جدول المستخدمين
-import { eq } from "drizzle-orm"; // استيراد أداة المقارنة
+import { db } from "./db"; 
+import { users } from "@shared/schema"; 
+import { eq, sql } from "drizzle-orm"; // أضفنا sql هنا
 
 const app = express();
 const httpServer = createServer(app);
@@ -63,8 +63,19 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // --- الجزء اللي ضفناه لإضافة المستخدم dark أوتوماتيك ---
+  // --- الجزء المعدل لإصلاح الجلسات (Sessions) والمستخدم ---
   try {
+    // 1. إنشاء جدول الجلسات إذا لم يكن موجوداً
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL PRIMARY KEY,
+        "sess" json NOT NULL,
+        "expire" timestamp NOT NULL
+      );
+    `);
+    log("جدول الجلسات جاهز ✅");
+
+    // 2. إنشاء مستخدم الإدمن
     const existingUser = await db.select().from(users).where(eq(users.username, "dark")).limit(1);
     if (existingUser.length === 0) {
       await db.insert(users).values({
@@ -77,7 +88,7 @@ app.use((req, res, next) => {
       log("مستخدم الإدمن 'dark' موجود مسبقاً.");
     }
   } catch (err) {
-    log(`تنبيه: لم يتم إضافة المستخدم تلقائياً، قد يكون الجدول غير موجود بعد: ${err}`);
+    log(`تنبيه في قاعدة البيانات: ${err}`);
   }
   // --------------------------------------------------
 
