@@ -4,7 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { db } from "./db"; 
 import { users } from "@shared/schema"; 
-import { eq, sql } from "drizzle-orm"; // أضفنا sql هنا
+import { eq, sql } from "drizzle-orm"; 
 
 const app = express();
 const httpServer = createServer(app);
@@ -63,47 +63,40 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // --- الجزء المعدل لإصلاح الجلسات (Sessions) والمستخدم ---
+  // --- حل شامل لكل الجداول (إصلاح قسم المهام والدخول) ---
   try {
-    // 1. إنشاء جدول الجلسات إذا لم يكن موجوداً
+    // 1. إنشاء كل الجداول الناقصة أوتوماتيكياً
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS "session" (
-        "sid" varchar NOT NULL PRIMARY KEY,
-        "sess" json NOT NULL,
-        "expire" timestamp NOT NULL
-      );
+      CREATE TABLE IF NOT EXISTS "session" ("sid" varchar PRIMARY KEY, "sess" json NOT NULL, "expire" timestamp NOT NULL);
+      CREATE TABLE IF NOT EXISTS "users" ("id" serial PRIMARY KEY, "username" text UNIQUE NOT NULL, "password" text NOT NULL, "role" text DEFAULT 'employee', "name" text NOT NULL, "bio" text, "avatar_url" text, "created_at" timestamp DEFAULT now());
+      CREATE TABLE IF NOT EXISTS "tasks" ("id" serial PRIMARY KEY, "title" text NOT NULL, "description" text NOT NULL, "due_date" timestamp NOT NULL, "status" text DEFAULT 'pending', "assignee_id" integer REFERENCES "users"("id"), "created_at" timestamp DEFAULT now());
     `);
-    log("جدول الجلسات جاهز ✅");
+    log("جميع الجداول (جلسات، مستخدمين، مهام) جاهزة ✅");
 
-    // 2. إنشاء مستخدم الإدمن
+    // 2. إضافة إدمن "dark" لو مش موجود
     const existingUser = await db.select().from(users).where(eq(users.username, "dark")).limit(1);
     if (existingUser.length === 0) {
       await db.insert(users).values({
         username: "dark",
-        password: "godarkgo",
-        role: "admin"
+        password: "godarkgo", 
+        role: "admin",
+        name: "Dark Admin"
       });
       log("تم إنشاء مستخدم الإدمن 'dark' بنجاح ✅");
-    } else {
-      log("مستخدم الإدمن 'dark' موجود مسبقاً.");
     }
   } catch (err) {
     log(`تنبيه في قاعدة البيانات: ${err}`);
   }
-  // --------------------------------------------------
 
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     console.error("Internal Server Error:", err);
-
     if (res.headersSent) {
       return next(err);
     }
-
     return res.status(status).json({ message });
   });
 
