@@ -130,11 +130,7 @@ export default function Login() {
                 </Button>
               </form>
             </Form>
-
-            <div className="mt-6 text-center text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg border border-border/50">
-              <p className="font-semibold mb-1">بيانات الدخول الافتراضية للمشرف:</p>
-              <p dir="ltr" className="font-mono text-xs">User: dark | Pass: godarkgo</p>
-            </div>
+            {/* تم حذف صندوق بيانات الدخول الافتراضية بنجاح لحماية خصوصيتك */}
           </CardContent>
         </Card>
       </motion.div>
