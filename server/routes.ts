@@ -27,11 +27,10 @@ export async function registerRoutes(
     console.log("Admin user seeded.");
   }
 
-  // User Routes
+  // --- User Routes ---
   app.get("/api/users", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     if (req.user?.role !== "admin") return res.sendStatus(403);
-    
     const users = await storage.getAllUsers();
     res.json(users);
   });
@@ -40,20 +39,21 @@ export async function registerRoutes(
     if (!req.isAuthenticated() || req.user.role !== "admin") return res.sendStatus(403);
     const parsed = api.users.create.input.safeParse(req.body);
     if (!parsed.success) return res.status(400).json(parsed.error);
-    
-    // Hash password for new user
     const hashedPassword = await hashPassword(parsed.data.password);
-    const user = await storage.createUser({
-      ...parsed.data,
-      password: hashedPassword,
-    });
+    const user = await storage.createUser({ ...parsed.data, password: hashedPassword });
     res.status(201).json(user);
   });
 
-  // Task Routes
+  // المسار الجديد لتحديث بيانات الملف الشخصي (مستقل)
+  app.patch("/api/users/profile", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const updatedUser = await storage.updateUser(req.user.id, req.body);
+    res.json(updatedUser);
+  });
+
+  // --- Task Routes ---
   app.get("/api/tasks", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
     if (req.user.role === "admin") {
       const tasks = await storage.getTasks();
       res.json(tasks);
@@ -65,10 +65,8 @@ export async function registerRoutes(
 
   app.post("/api/tasks", async (req, res) => {
     if (!req.isAuthenticated() || req.user.role !== "admin") return res.sendStatus(403);
-    
     const parsed = api.tasks.create.input.safeParse(req.body);
     if (!parsed.success) return res.status(400).json(parsed.error);
-
     const task = await storage.createTask(parsed.data);
     res.status(201).json(task);
   });
@@ -79,12 +77,8 @@ export async function registerRoutes(
     const task = await storage.getTask(id);
     if (!task) return res.sendStatus(404);
 
-    // Employees can only update status of their own tasks
     if (req.user.role !== "admin") {
       if (task.assigneeId !== req.user.id) return res.sendStatus(403);
-      // We accept any update here as per route definition, 
-      // but strictly speaking we might want to limit it.
-      // For MVP, this is acceptable as the UI will enforce fields.
     }
 
     const parsed = api.tasks.update.input.safeParse(req.body);
