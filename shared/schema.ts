@@ -20,7 +20,7 @@ export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  dueDate: timestamp("due_date").notNull(),
+  dueDate: timestamp("due_date"),
   status: text("status", { enum: ["pending", "completed"] }).notNull().default("pending"),
   assigneeId: integer("assignee_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
