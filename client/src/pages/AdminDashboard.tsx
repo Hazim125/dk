@@ -21,7 +21,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema, insertTaskSchema } from "@shared/schema";
-import { z } from "zod";
 import { motion } from "framer-motion";
 
 // --- Components ---
@@ -234,15 +233,24 @@ function AddTaskDialog() {
                 <FormItem><FormLabel>التاريخ</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="assigneeId" render={({ field }) => (
-                <FormItem><FormLabel>الموظف</Label>
-                  <Select onValueChange={(val) => field.onChange(parseInt(val))}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="اختر موظف" /></SelectTrigger></FormControl>
+                <FormItem>
+                  <FormLabel>الموظف</FormLabel>
+                  <Select 
+                    onValueChange={(val) => field.onChange(parseInt(val))}
+                    value={field.value?.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر موظف" />
+                      </SelectTrigger>
+                    </FormControl>
                     <SelectContent>
                       {employees?.filter(e => e.role === 'employee').map(emp => (
                         <SelectItem key={emp.id} value={emp.id.toString()}>{emp.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
                 </FormItem>
               )} />
             </div>
