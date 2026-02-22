@@ -2,10 +2,10 @@ import { useUser } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, User, Mail, Shield } from "lucide-react";
+import { Loader2, User, Shield } from "lucide-react";
 
 export default function Settings() {
-  const { user, isLoading } = useUser();
+  const { data: user, isLoading } = useUser();
 
   if (isLoading) {
     return (
@@ -15,7 +15,6 @@ export default function Settings() {
     );
   }
 
-  // حماية في حال كان المستخدم غير مسجل دخول
   if (!user) {
     return (
       <div className="p-8 text-center text-muted-foreground">
@@ -25,7 +24,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6 p-4" dir="rtl">
       <h1 className="text-3xl font-bold">الملف الشخصي</h1>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -66,55 +65,9 @@ export default function Settings() {
                 <p className="font-medium">{user.role === "admin" ? "Admin" : "Employee"}</p>
               </div>
             </div>
-
-            {user.bio && (
-              <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground mb-1">النبذة التعريفية</p>
-                <p className="text-sm">{user.bio}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
     </div>
   );
-}
-        body: JSON.stringify({ name, avatarUrl: avatar }),
-      });
-      if (res.ok) {
-        toast({ title: "تم التحديث ✅", description: "تم حفظ بياناتك بنجاح" });
-      } else { throw new Error(); }
-    } catch (error) {
-      toast({ title: "خطأ", description: "فشل تحديث البيانات", variant: "destructive" });
-    }
-  };
-
-  return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6 text-right" dir="rtl">
-      <Card>
-        <CardHeader><CardTitle>إعدادات الملف الشخصي</CardTitle></CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-24 w-24 border-2 border-primary">
-                <AvatarImage src={avatar} />
-                <AvatarFallback>{name?.slice(0, 2) || "U"}</AvatarFallback>
-              </Avatar>
-              <label className="absolute bottom-0 right-0 p-1 bg-primary text-white rounded-full cursor-pointer hover:scale-110">
-                <Camera className="w-4 h-4" />
-                <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-              </label>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">اسم العرض</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: Dark" />
-          </div>
-          <Button onClick={handleSave} className="w-full gap-2">
-            <Save className="w-4 h-4" /> حفظ التعديلات
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+} // تأكد إن ده آخر قوس في الملف ومفيش أي حاجة بعده
