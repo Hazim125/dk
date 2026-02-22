@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast"; // ده السطر اللي كان ناقص
 
 export default function Settings() {
   const { data: user } = useUser();
@@ -23,10 +23,6 @@ export default function Settings() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1024 * 1024) {
-        toast({ title: "خطأ", description: "حجم الصورة كبير جداً", variant: "destructive" });
-        return;
-      }
       const reader = new FileReader();
       reader.onloadend = () => setAvatar(reader.result as string);
       reader.readAsDataURL(file);
@@ -49,7 +45,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto p-6 space-y-6 text-right" dir="rtl">
       <Card>
         <CardHeader><CardTitle>إعدادات الملف الشخصي</CardTitle></CardHeader>
         <CardContent className="space-y-6">
@@ -57,7 +53,7 @@ export default function Settings() {
             <div className="relative">
               <Avatar className="h-24 w-24 border-2 border-primary">
                 <AvatarImage src={avatar} />
-                <AvatarFallback>{name.slice(0, 2)}</AvatarFallback>
+                <AvatarFallback>{name?.slice(0, 2) || "U"}</AvatarFallback>
               </Avatar>
               <label className="absolute bottom-0 right-0 p-1 bg-primary text-white rounded-full cursor-pointer hover:scale-110">
                 <Camera className="w-4 h-4" />
@@ -67,7 +63,7 @@ export default function Settings() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">اسم العرض</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Dark" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثال: Dark" />
           </div>
           <Button onClick={handleSave} className="w-full gap-2">
             <Save className="w-4 h-4" /> حفظ التعديلات
