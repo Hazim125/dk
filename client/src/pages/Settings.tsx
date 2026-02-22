@@ -1,40 +1,50 @@
-import { useUser, useUpdateProfile } from "@/hooks/use-auth"; // هنحتاج نعمل الـ Hook ده
-import { useState } from "react";
+import { useUser } from "@/hooks/use-auth"; 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, User, Save } from "lucide-react";
+import { Camera, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Settings() {
-  const { user } = useUser();
+  const { data: user } = useUser();
   const { toast } = useToast();
-  const [name, setName] = useState(user?.name || "");
-  const [avatar, setAvatar] = useState(user?.avatarUrl || "");
+  const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState("");
 
-  // دالة لتحويل الصورة لـ Base64
+  useEffect(() => {
+    if (user) {
+      setName(user.name || "");
+      setAvatar(user.avatarUrl || "");
+    }
+  }, [user]);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 1024 * 1024) {
+        toast({ title: "خطأ", description: "حجم الصورة كبير جداً", variant: "destructive" });
+        return;
+      }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatar(reader.result as string);
-      };
+      reader.onloadend = () => setAvatar(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
   const handleSave = async () => {
-    // هنا هننادي الـ API اللي عملناه في routes.ts
-    const res = await fetch("/api/users/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, avatarUrl: avatar }),
-    });
-
-    if (res.ok) {
-      toast({ title: "تم التحديث", description: "تم حفظ بياناتك بنجاح" });
+    try {
+      const res = await fetch("/api/users/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, avatarUrl: avatar }),
+      });
+      if (res.ok) {
+        toast({ title: "تم التحديث ✅", description: "تم حفظ بياناتك بنجاح" });
+      } else { throw new Error(); }
+    } catch (error) {
+      toast({ title: "خطأ", description: "فشل تحديث البيانات", variant: "destructive" });
     }
   };
 
@@ -49,19 +59,16 @@ export default function Settings() {
                 <AvatarImage src={avatar} />
                 <AvatarFallback>{name.slice(0, 2)}</AvatarFallback>
               </Avatar>
-              <label className="absolute bottom-0 right-0 p-1 bg-primary text-white rounded-full cursor-pointer hover:scale-110 transition-transform">
+              <label className="absolute bottom-0 right-0 p-1 bg-primary text-white rounded-full cursor-pointer hover:scale-110">
                 <Camera className="w-4 h-4" />
                 <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
               </label>
             </div>
-            <p className="text-sm text-muted-foreground">اضغط على الكاميرا لتغيير الصورة</p>
           </div>
-
           <div className="space-y-2">
-            <label className="text-sm font-medium">اسم العرض (الاسم اللي يظهر للناس)</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً: Dark" />
+            <label className="text-sm font-medium">اسم العرض</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Dark" />
           </div>
-
           <Button onClick={handleSave} className="w-full gap-2">
             <Save className="w-4 h-4" /> حفظ التعديلات
           </Button>
