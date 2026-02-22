@@ -7,8 +7,9 @@ import { useUser, useLogout } from "@/hooks/use-auth";
 import Login from "@/pages/Login";
 import AdminDashboard from "@/pages/AdminDashboard";
 import EmployeeDashboard from "@/pages/EmployeeDashboard";
+import Settings from "@/pages/Settings"; // استيراد صفحة الإعدادات
 import NotFound from "@/pages/not-found";
-import { Loader2, LogOut, LayoutDashboard } from "lucide-react";
+import { Loader2, LogOut, Settings as SettingsIcon, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect } from "react";
@@ -38,9 +39,11 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
-              م
-            </div>
+            <Link href="/">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold cursor-pointer hover:rotate-6 transition-transform">
+                D
+              </div>
+            </Link>
             <h1 className="font-bold text-lg hidden sm:block">إدارة المهام</h1>
           </div>
           
@@ -48,6 +51,19 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
             <span className="text-sm font-medium ml-2 hidden sm:inline-block">
                {user.name} ({user.role === 'admin' ? 'مدير' : 'موظف'})
             </span>
+            
+            <Link href="/">
+              <Button variant="ghost" size="icon" title="الرئيسية">
+                <Home className="h-5 w-5" />
+              </Button>
+            </Link>
+
+            <Link href="/settings">
+              <Button variant="ghost" size="icon" title="الإعدادات">
+                <SettingsIcon className="h-5 w-5" />
+              </Button>
+            </Link>
+
             <ThemeToggle />
             <LogoutButton />
           </div>
@@ -79,6 +95,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/settings">
+        <ProtectedRoute component={Settings} />
+      </Route>
       <Route path="/">
         {() => {
           const { data: user, isLoading } = useUser();
@@ -95,7 +114,6 @@ function Router() {
 }
 
 function App() {
-  // Enforce RTL on mount
   useEffect(() => {
     document.documentElement.dir = "rtl";
     document.documentElement.lang = "ar";
