@@ -1,11 +1,11 @@
-import { useUser, useUpdateProfile } from "@/hooks/use-auth"; // تم تصحيح i صغيرة
+import { useUser, useUpdateProfile } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, User, Shield, Trash2, Save, Image as ImageIcon } from "lucide-react";
+import { Loader2, User, Shield, Trash2, Save, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +19,6 @@ export default function Settings() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
-  // تحديث القيم المحلية عند تحميل بيانات المستخدم
   useEffect(() => {
     if (user) {
       setName(user.name || "");
@@ -27,6 +26,22 @@ export default function Settings() {
       setAvatarUrl(user.avatarUrl || "");
     }
   }, [user]);
+
+  // دالة تحويل الصورة لـ Base64
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // منع الصور أكبر من 1 ميجا
+        toast({ title: "الصورة كبيرة جداً", description: "يرجى اختيار صورة أقل من 1 ميجا", variant: "destructive" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const { data: users, isLoading: usersLoading } = useQuery<any[]>({
     queryKey: ["/api/users"],
@@ -43,41 +58,48 @@ export default function Settings() {
   });
 
   if (userLoading || usersLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   return (
     <div className="container mx-auto p-6 space-y-8" dir="rtl">
-      <h1 className="text-3xl font-bold">إعدادات النظام والملف الشخصي</h1>
+      <h1 className="text-3xl font-bold">إعدادات النظام</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" /> تعديل بياناتي
-            </CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> تعديل البروفايل</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {/* زرار رفع الصورة */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">رابط صورة البروفايل</label>
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="https://example.com/image.jpg" 
-                  value={avatarUrl} 
-                  onChange={(e) => setAvatarUrl(e.target.value)} 
-                />
+              <label className="text-sm font-medium">صورة البروفايل</label>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={avatarUrl} />
+                  <AvatarFallback>{name?.slice(0,2)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                   <Input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    id="avatar-upload" 
+                    onChange={handleImageUpload} 
+                   />
+                   <label htmlFor="avatar-upload">
+                     <Button type="button" variant="outline" className="w-full cursor-pointer" asChild>
+                       <span><Upload className="ml-2 h-4 w-4" /> اختر صورة</span>
+                     </Button>
+                   </label>
+                </div>
               </div>
             </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium">الاسم الكامل</label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">النبذة التعريفية (Bio)</label>
+              <label className="text-sm font-medium">النبذة (Bio)</label>
               <Textarea value={bio} onChange={(e) => setBio(e.target.value)} />
             </div>
             <Button 
@@ -86,65 +108,40 @@ export default function Settings() {
               disabled={updateProfileMutation.isPending}
             >
               {updateProfileMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
-              حفظ كل التغييرات
+              حفظ الإعدادات
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="bg-primary/5 border-primary/20">
+        {/* عرض الرتبة وحالة الحساب */}
+        <Card className="bg-primary/5">
           <CardHeader className="text-center">
-             <Avatar className="h-32 w-32 mx-auto mb-4 border-4 border-white shadow-lg">
-                <AvatarImage src={avatarUrl || ""} />
-                <AvatarFallback className="text-3xl">{name?.slice(0,2)}</AvatarFallback>
+             <Avatar className="h-24 w-24 mx-auto mb-4 border-2 border-primary">
+                <AvatarImage src={avatarUrl} />
+                <AvatarFallback className="text-2xl">{name?.slice(0,2)}</AvatarFallback>
              </Avatar>
-             <CardTitle className="text-2xl">{name}</CardTitle>
-             <p className="text-primary font-bold mt-2">
-               {user?.role === 'admin' ? '🛡️ مدير نظام (Dark)' : '👤 موظف'}
-             </p>
+             <CardTitle className="text-xl">{name}</CardTitle>
+             <Badge className="mt-2 mx-auto">{user?.role === 'admin' ? '🛡️ مدير نظام' : '👤 موظف'}</Badge>
           </CardHeader>
         </Card>
       </div>
 
+      {/* إدارة الموظفين */}
       {user?.role === 'admin' && (
-        <Card className="border-red-100 shadow-sm">
-          <CardHeader className="bg-red-50/50">
-            <CardTitle className="text-red-600 flex items-center gap-2">
-              <Shield className="h-5 w-5" /> إدارة شؤون الموظفين
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y px-6">
-              {users?.filter(u => u.id !== user.id).map((employee) => (
-                <div key={employee.id} className="py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={employee.avatarUrl} />
-                      <AvatarFallback>{employee.name?.slice(0,2)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm">{employee.name}</p>
-                      <p className="text-xs text-muted-foreground">@{employee.username}</p>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    className="text-red-500 hover:bg-red-50 hover:text-red-600"
-                    size="icon"
-                    onClick={() => {
-                      if(confirm(`هل أنت متأكد من حذف الموظف (${employee.name}) نهائياً؟`)) {
-                        deleteMutation.mutate(employee.id);
-                      }
-                    }}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </Button>
+        <Card>
+          <CardHeader><CardTitle className="text-red-600 flex items-center gap-2"><Shield className="h-5 w-5" /> إدارة الموظفين</CardTitle></CardHeader>
+          <CardContent className="divide-y">
+            {users?.filter(u => u.id !== user.id).map((employee) => (
+              <div key={employee.id} className="py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-9 w-9"><AvatarImage src={employee.avatarUrl} /><AvatarFallback>{employee.name?.slice(0,2)}</AvatarFallback></Avatar>
+                  <div><p className="font-medium text-sm">{employee.name}</p><p className="text-xs text-muted-foreground">@{employee.username}</p></div>
                 </div>
-              ))}
-              {users?.filter(u => u.id !== user.id).length === 0 && (
-                <p className="p-8 text-center text-muted-foreground italic">لا يوجد موظفون آخرون في النظام حالياً.</p>
-              )}
-            </div>
+                <Button variant="ghost" size="icon" className="text-red-500" onClick={() => confirm(`حذف ${employee.name}؟`) && deleteMutation.mutate(employee.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
