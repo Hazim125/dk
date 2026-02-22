@@ -1,39 +1,84 @@
-import { useUser } from "@/hooks/use-auth"; 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useUser } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save } from "lucide-react";
-import { useToast } from "@/hooks/use-toast"; // ده السطر اللي كان ناقص
+import { Badge } from "@/components/ui/badge";
+import { Loader2, User, Mail, Shield } from "lucide-react";
 
 export default function Settings() {
-  const { data: user } = useUser();
-  const { toast } = useToast();
-  const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState("");
+  const { user, isLoading } = useUser();
 
-  useEffect(() => {
-    if (user) {
-      setName(user.name || "");
-      setAvatar(user.avatarUrl || "");
-    }
-  }, [user]);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setAvatar(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
+  // حماية في حال كان المستخدم غير مسجل دخول
+  if (!user) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        لم يتم العثور على بيانات المستخدم.
+      </div>
+    );
+  }
 
-  const handleSave = async () => {
-    try {
-      const res = await fetch("/api/users/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+  return (
+    <div className="space-y-6" dir="rtl">
+      <h1 className="text-3xl font-bold">الملف الشخصي</h1>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="md:col-span-1">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Avatar className="h-24 w-24 border-4 border-primary/10">
+                <AvatarImage src={user.avatarUrl || undefined} />
+                <AvatarFallback className="text-2xl bg-primary/5">
+                  {user.name?.slice(0, 2) || "U"}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <CardTitle>{user.name}</CardTitle>
+            <Badge variant="secondary" className="mt-2">
+              {user.role === "admin" ? "مدير النظام" : "موظف"}
+            </Badge>
+          </CardHeader>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>المعلومات الأساسية</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <User className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">اسم المستخدم</p>
+                <p className="font-medium">@{user.username}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+              <Shield className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">الرتبة</p>
+                <p className="font-medium">{user.role === "admin" ? "Admin" : "Employee"}</p>
+              </div>
+            </div>
+
+            {user.bio && (
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-xs text-muted-foreground mb-1">النبذة التعريفية</p>
+                <p className="text-sm">{user.bio}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
         body: JSON.stringify({ name, avatarUrl: avatar }),
       });
       if (res.ok) {
