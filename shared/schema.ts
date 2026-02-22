@@ -39,14 +39,25 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   }),
 }));
 
-// === BASE SCHEMAS ===
+// === BASE SCHEMAS (With Fixes) ===
 
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true });
+// تعديل الـ User Schema
+export const insertUserSchema = createInsertSchema(users).omit({ 
+  id: true, 
+  createdAt: true 
+});
+
+// التعديل الجوهري هنا: إجبار التاريخ والـ ID على التحويل الصحيح
+export const insertTaskSchema = createInsertSchema(tasks, {
+  dueDate: z.coerce.date().optional().nullable(),
+  assigneeId: z.coerce.number().optional().nullable(),
+}).omit({ 
+  id: true, 
+  createdAt: true 
+});
 
 // === EXPLICIT API CONTRACT TYPES ===
 
-// Base types
 export type User = typeof users.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -61,4 +72,4 @@ export type LoginRequest = { username: string; password: string };
 
 // Response types
 export type UserResponse = User;
-export type TaskResponse = Task & { assignee?: User }; // Include assignee details if needed
+export type TaskResponse = Task & { assignee?: User };
