@@ -14,6 +14,8 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, updates: Partial<InsertUser>): Promise<User>; // أضيفت هنا
+  deleteUser(id: number): Promise<void>; // أضيفت هنا
 
   getTasks(): Promise<(Task & { assignee: User | null })[]>;
   getTask(id: number): Promise<Task | undefined>;
@@ -29,10 +31,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
@@ -45,15 +44,26 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  // دالة التحديث الجديدة التي ستحل مشكلة عدم حفظ البيانات
+  async updateUser(id: number, updates: Partial<InsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  // دالة الحذف الجديدة التي ستحل مشكلة فشل الحذف
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
   async getTasks(): Promise<(Task & { assignee: User | null })[]> {
     const result = await db
-      .select({
-        task: tasks,
-        assignee: users,
-      })
+      .select({ task: tasks, assignee: users })
       .from(tasks)
       .leftJoin(users, eq(tasks.assigneeId, users.id));
-
     return result.map(({ task, assignee }) => ({ ...task, assignee }));
   }
 
@@ -63,10 +73,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTasksByAssignee(assigneeId: number): Promise<Task[]> {
-    return await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.assigneeId, assigneeId));
+    return await db.select().from(tasks).where(eq(tasks.assigneeId, assigneeId));
   }
 
   async createTask(insertTask: InsertTask): Promise<Task> {
@@ -75,11 +82,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTask(id: number, updates: Partial<InsertTask>): Promise<Task> {
-    const [task] = await db
-      .update(tasks)
-      .set(updates)
-      .where(eq(tasks.id, id))
-      .returning();
+    const [task] = await db.update(tasks).set(updates).where(eq(tasks.id, id)).returning();
     return task;
   }
 }
